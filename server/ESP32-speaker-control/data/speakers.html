@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Select Bluetooth Speaker</title>
+</head>
+<body>
+  <h1>Available Bluetooth Speakers</h1>
+  <ul id="deviceList"></ul>
+  
+  <script>
+    // Fetch the list of available Bluetooth devices
+    async function fetchBluetoothDevices() {
+      const response = await fetch('/list_bt_devices');
+      const devices = await response.json();
+      const deviceList = document.getElementById('deviceList');
+      devices.forEach(device => {
+        const listItem = document.createElement('li');
+        listItem.textContent = device;
+        const connectButton = document.createElement('button');
+        connectButton.textContent = "Connect";
+        connectButton.onclick = () => connectToDevice(device);
+        listItem.appendChild(connectButton);
+        deviceList.appendChild(listItem);
+      });
+    }
+
+    // Connect to a selected Bluetooth device
+    function connectToDevice(device) {
+      fetch(`/connect_speaker?device=${encodeURIComponent(device)}`)
+        .then(response => response.text())
+        .then(status => alert(status));
+    }
+
+    window.onload = fetchBluetoothDevices;
+  </script>
+</body>
+</html>

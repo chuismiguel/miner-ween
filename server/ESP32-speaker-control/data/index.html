@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ESP32 MP3 Uploader and Speaker Selector</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    form, .section {
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    select, input[type="file"], button {
+      margin-top: 5px;
+      padding: 8px;
+      width: 100%;
+      max-width: 300px;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin: 5px 0;
+    }
+    .connect-button {
+      margin-left: 10px;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upload .mp3 File to SD Card</h1>
+  <form method="POST" action="/upload" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".mp3" required>
+    <button type="submit">Upload File</button>
+  </form>
+
+  <h1>Select File and Speaker</h1>
+  <form id="playbackForm">
+    <label for="fileSelect">Select File:</label>
+    <select id="fileSelect" required>
+      <option value="" disabled selected>Select a file</option>
+      <!-- Dynamically populated list of files -->
+    </select>
+
+    <label for="speakerSelect">Select Speaker:</label>
+    <select id="speakerSelect" required>
+      <option value="" disabled selected>Select a speaker</option>
+      <!-- Dynamically populated list of speakers -->
+    </select>
+
+    <button type="button" onclick="playFile()">Play</button>
+  </form>
+
+  <script>
+    // Function to load MP3 files from SD card
+    async function fetchFiles() {
+      try {
+        const response = await fetch('/list_files');
+        const files = await response.json();
+        const fileSelect = document.getElementById('fileSelect');
+        fileSelect.innerHTML = '<option value="" disabled selected>Select a file</option>'; // Reset options
+        files.forEach(file => {
+          const option = document.createElement('option');
+          option.value = file;
+          option.text = file;
+          fileSelect.add(option);
+        });
+      } catch (error) {
+        console.error('Error fetching files:', error);
+      }
+    }
+
+    // Function to load Bluetooth speakers on dropdown click
+    async function fetchSpeakers() {
+      try {
+        const response = await fetch('/list_bt_devices');
+        const speakers = await response.json();
+        const speakerSelect = document.getElementById('speakerSelect');
+        speakerSelect.innerHTML = '<option value="" disabled selected>Select a speaker</option>'; // Reset options
+        speakers.forEach(speaker => {
+          const option = document.createElement('option');
+          option.value = speaker;
+          option.text = speaker;
+          speakerSelect.add(option);
+        });
+      } catch (error) {
+        console.error('Error fetching Bluetooth devices:', error);
+      }
+    }
+
+    // Play the selected file on the selected speaker
+    function playFile() {
+      const file = document.getElementById('fileSelect').value;
+      const speaker = document.getElementById('speakerSelect').value;
+      
+      if (!file || !speaker) {
+        alert('Please select both a file and a speaker.');
+        return;
+      }
+
+      fetch(`/play?file=${encodeURIComponent(file)}&speaker=${encodeURIComponent(speaker)}`)
+        .then(response => response.text())
+        .then(status => {
+          alert(status);
+        })
+        .catch(error => {
+          console.error('Error initiating playback:', error);
+        });
+    }
+
+    // Trigger Bluetooth scan only when the dropdown is clicked
+    document.getElementById('speakerSelect').addEventListener('click', fetchSpeakers);
+
+    // Load files on page load
+    window.onload = () => {
+      fetchFiles();
+    };
+  </script>
+</body>
+</html>
