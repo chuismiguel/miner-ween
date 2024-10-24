@@ -52,4 +52,5 @@ void loop() {
   // Update the last button states
   lastButton1State = reading1;
   lastButton2State = reading2;
+  delay(5);
 }
