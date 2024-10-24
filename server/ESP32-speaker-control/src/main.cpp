@@ -13,6 +13,13 @@ const char* password = "12345678";
 #define SD_MMC_CLK 39 // Please do not modify it.
 #define SD_MMC_D0 40  // Please do not modify it.
 
+#define RELAY_PIN 14
+
+int interval = 45;
+unsigned long previousMillis = 0;  // Stores the last time the LED state was updated
+
+bool relayValue = false;
+
 AsyncWebServer server(80);
 String btDevicesList = "[]";
 String fileList = "[]";  // Store the list of files here
@@ -114,8 +121,31 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
   }
 }
 
+// Function to handle button press requests
+void handleButtonPress(AsyncWebServerRequest *request) {
+  if (request->hasParam("pressed")) {
+    String button = request->getParam("pressed")->value();
+    Serial.println("Button " + button + " pressed!");
+
+    if (button == "2") {
+      relayValue = !relayValue;
+    }
+    
+    // No need to send any acknowledgment to the client
+    request->send(200);  // Optionally send a 200 OK response
+  } else {
+    // Handle the case where the "pressed" parameter is missing
+    request->send(400, "text/plain", "Missing 'pressed' parameter");
+  }
+}
 void setup() {
   Serial.begin(115200);
+
+  pinMode(RELAY_PIN, OUTPUT);
+
+  digitalWrite(RELAY_PIN, LOW);
+
+  randomSeed(analogRead(0));
 
   // Initialize Wi-Fi as an access point
   WiFi.softAP(ssid, password);
@@ -123,55 +153,75 @@ void setup() {
   Serial.print("AP IP Address: ");
   Serial.println(IP);
 
-  // Initialize SD card with SD_MMC (SDMMC protocol)
-  if (!initSDCard()) {
-    Serial.println("SD Card initialization failed.");
-    return;
-  }
+  // // Initialize SD card with SD_MMC (SDMMC protocol)
+  // if (!initSDCard()) {
+  //   Serial.println("SD Card initialization failed.");
+  //   return;
+  // }
 
-  // Scan files at startup
-  scanFiles();
+  // // Scan files at startup
+  // scanFiles();
 
-  // Initialize LittleFS for serving HTML/CSS files
-  if (!LittleFS.begin(true)) {
-    Serial.println("An error occurred while mounting LittleFS");
-    return;
-  }
+  // // Initialize LittleFS for serving HTML/CSS files
+  // if (!LittleFS.begin(true)) {
+  //   Serial.println("An error occurred while mounting LittleFS");
+  //   return;
+  // }
 
-  // Handle file upload
-  server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request){}, 
-  handleUpload);
+  // // Handle file upload
+  // server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request){}, 
+  // handleUpload);
 
-  // Serve the main page (upload and select page)
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(LittleFS, "/index.html", String());
-  });
+  // // Serve the main page (upload and select page)
+  // server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+  //   request->send(LittleFS, "/index.html", String());
+  // });
 
-  // Serve a page for file selection
-  server.on("/files", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(LittleFS, "/files.html", String());
-  });
+  // // Serve a page for file selection
+  // server.on("/files", HTTP_GET, [](AsyncWebServerRequest *request) {
+  //   request->send(LittleFS, "/files.html", String());
+  // });
 
-  // Serve a page for Bluetooth device listing
-  server.on("/speakers", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(LittleFS, "/speakers.html", String());
-  });
+  // // Serve a page for Bluetooth device listing
+  // server.on("/speakers", HTTP_GET, [](AsyncWebServerRequest *request) {
+  //   request->send(LittleFS, "/speakers.html", String());
+  // });
 
-  // List files API
-  server.on("/list_files", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "application/json", fileList);  // Send the list of files as JSON
-  });
+  // // List files API
+  // server.on("/list_files", HTTP_GET, [](AsyncWebServerRequest *request) {
+  //   request->send(200, "application/json", fileList);  // Send the list of files as JSON
+  // });
 
-  // List Bluetooth devices API
-  server.on("/list_bt_devices", HTTP_GET, [](AsyncWebServerRequest *request) {
-    scanBluetoothDevices();  // Trigger scan only when requested
-    request->send(200, "application/json", btDevicesList);
-  });
+  // // List Bluetooth devices API
+  // server.on("/list_bt_devices", HTTP_GET, [](AsyncWebServerRequest *request) {
+  //   scanBluetoothDevices();  // Trigger scan only when requested
+  //   request->send(200, "application/json", btDevicesList);
+  // });
+
+  // Define HTTP GET endpoint for "/button"
+  server.on("/button", handleButtonPress);
 
   // Start the server
   server.begin();
 }
 
+void relayLightingLoop() {
+  unsigned long currentMillis = millis();  // Get the current time in milliseconds
+
+  // Check if 50ms have passed since the last update
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;  // Save the last update time
+
+    // Generate a random value (0 or 1) and set it to the LED pin
+    int randomValue = random(0, 2);  // Random value between 0 and 1
+    digitalWrite(RELAY_PIN, randomValue == 1 ? HIGH : LOW);
+  }
+}
+
 void loop() {
-  // Main loop (can include audio playback logic based on selected file and speaker)
+  if (relayValue) {
+    relayLightingLoop();
+  } else {
+    digitalWrite(RELAY_PIN, LOW);
+  }
 }
