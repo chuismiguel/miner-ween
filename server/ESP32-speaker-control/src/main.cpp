@@ -154,49 +154,49 @@ void setup() {
   Serial.println(IP);
 
   // // Initialize SD card with SD_MMC (SDMMC protocol)
-  // if (!initSDCard()) {
-  //   Serial.println("SD Card initialization failed.");
-  //   return;
-  // }
+   if (!initSDCard()) {
+     Serial.println("SD Card initialization failed.");
+     return;
+   }
 
   // // Scan files at startup
-  // scanFiles();
+   scanFiles();
 
   // // Initialize LittleFS for serving HTML/CSS files
-  // if (!LittleFS.begin(true)) {
-  //   Serial.println("An error occurred while mounting LittleFS");
-  //   return;
-  // }
+   if (!LittleFS.begin(true)) {
+     Serial.println("An error occurred while mounting LittleFS");
+     return;
+   }
 
-  // // Handle file upload
-  // server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request){}, 
-  // handleUpload);
+   // Handle file upload
+   server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request){}, 
+   handleUpload);
 
-  // // Serve the main page (upload and select page)
-  // server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-  //   request->send(LittleFS, "/index.html", String());
-  // });
+  // Serve the main page (upload and select page)
+   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+     request->send(LittleFS, "/index.html", String());
+   });
 
-  // // Serve a page for file selection
-  // server.on("/files", HTTP_GET, [](AsyncWebServerRequest *request) {
-  //   request->send(LittleFS, "/files.html", String());
-  // });
+  // Serve a page for file selection
+   server.on("/files", HTTP_GET, [](AsyncWebServerRequest *request) {
+     request->send(LittleFS, "/files.html", String());
+   });
 
-  // // Serve a page for Bluetooth device listing
-  // server.on("/speakers", HTTP_GET, [](AsyncWebServerRequest *request) {
-  //   request->send(LittleFS, "/speakers.html", String());
-  // });
+   // Serve a page for Bluetooth device listing
+   server.on("/speakers", HTTP_GET, [](AsyncWebServerRequest *request) {
+     request->send(LittleFS, "/speakers.html", String());
+   });
 
-  // // List files API
-  // server.on("/list_files", HTTP_GET, [](AsyncWebServerRequest *request) {
-  //   request->send(200, "application/json", fileList);  // Send the list of files as JSON
-  // });
+   // List files API
+   server.on("/list_files", HTTP_GET, [](AsyncWebServerRequest *request) {
+     request->send(200, "application/json", fileList);  // Send the list of files as JSON
+   });
 
-  // // List Bluetooth devices API
-  // server.on("/list_bt_devices", HTTP_GET, [](AsyncWebServerRequest *request) {
-  //   scanBluetoothDevices();  // Trigger scan only when requested
-  //   request->send(200, "application/json", btDevicesList);
-  // });
+   // List Bluetooth devices API
+   server.on("/list_bt_devices", HTTP_GET, [](AsyncWebServerRequest *request) {
+     scanBluetoothDevices();  // Trigger scan only when requested
+     request->send(200, "application/json", btDevicesList);
+   });
 
   // Define HTTP GET endpoint for "/button"
   server.on("/button", handleButtonPress);
